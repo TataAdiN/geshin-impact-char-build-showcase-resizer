@@ -1,152 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Genshin Impact Showcase</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: sans-serif;
+                text-align: center;
+                padding: 20px;
+            }
 
-<head>
-    <meta charset="UTF-8">
-    <title>Manipulasi Gambar</title>
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Free -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
+            canvas {
+                transform: scale(0.5);
+            }
 
-        canvas {
-            transform: scale(0.5);
-        }
+            button {
+                margin: 10px;
+                padding: 10px 20px;
+            }
+        </style>
+    </head>
 
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-        }
-    </style>
-</head>
-
-<body>
-    <h2 class="mb-4">Form Manipulasi Gambar</h2>
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <strong>Preview Hasil Manipulasi</strong>
+    <body>
+        <h2 class="mb-4">Form Gambar Showcase</h2>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <strong>Preview Showcase</strong>
+                    </div>
+                    <div
+                        class="card-body d-flex justify-content-center align-items-center"
+                        style="
+                            height: 1000px;
+                            position: relative;
+                            overflow: hidden;
+                        "
+                    >
+                        <canvas
+                            id="resultCanvas"
+                            width="1080"
+                            height="1920"
+                        ></canvas>
+                    </div>
+                    <div class="card-footer text-muted text-center">
+                        Ukuran : 1080 × 1920
+                    </div>
                 </div>
-                <div class="card-body d-flex justify-content-center align-items-center"
-                    style="height: 1000px; position: relative; overflow: hidden;">
-                    <canvas id="resultCanvas" width="1080" height="1920"></canvas>
-                </div>
-                <div class="card-footer text-muted text-center">
-                    Ukuran asli: 1080 × 1920 | Preview diskalakan
+            </div>
+            <div class="col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <strong>Form</strong>
+                    </div>
+                    <div class="card-body" style="height: 1000px">
+                        <div class="mb-3 text-start">
+                            <label
+                                for="imageInput"
+                                class="form-label fw-semibold"
+                                >Gambar</label
+                            >
+                            <input
+                                type="file"
+                                id="imageInput"
+                                accept="image/*"
+                                class="form-control"
+                            />
+                        </div>
+                        <div class="mb-4">
+                            <button
+                                id="processBtn"
+                                class="btn btn-success me-2"
+                            >
+                                <i class="fas fa-sync-alt me-1"></i> Proses &
+                                Preview
+                            </button>
+                            <button id="downloadBtn" class="btn btn-secondary">
+                                <i class="fas fa-download me-1"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted text-center"></div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <strong>Form</strong>
-                </div>
-                <div class="card-body" style="height: 1000px;">
-                    <div class="mb-3 text-start">
-                        <label for="imageInput" class="form-label fw-semibold">Gambar</label>
-                        <input type="file" id="imageInput" accept="image/*" class="form-control">
-                    </div>
-                    <div class="mb-4">
-                        <button id="processBtn" class="btn btn-success me-2">
-                            <i class="fas fa-sync-alt me-1"></i> Proses & Preview
-                        </button>
-                        <button id="downloadBtn" class="btn btn-secondary">
-                            <i class="fas fa-download me-1"></i> Download
-                        </button>
-                    </div>
-                </div>
-                <div class="card-footer text-muted text-center">
-
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        let imageSrc = null;
-
-        document.getElementById('imageInput').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                imageSrc = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        document.getElementById('processBtn').addEventListener('click', async () => {
-            if (!imageSrc) return alert("Silakan upload gambar terlebih dahulu.");
-
-            const originalImage = await loadImage(imageSrc);
-            const canvas = document.getElementById('resultCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const totalWidth = 1536;
-            const topWidth = 580;
-            const bottomWidth = totalWidth - topWidth; // 956
-            const partWidth = bottomWidth / 2; // 478
-
-            // Ambil bagian atas (580px dari kiri)
-            const topCanvas = document.createElement('canvas');
-            topCanvas.width = topWidth;
-            topCanvas.height = originalImage.height;
-            const topCtx = topCanvas.getContext('2d');
-            topCtx.drawImage(originalImage, 0, 0, topWidth, originalImage.height, 0, 0, topWidth, originalImage.height);
-            const topImage = await loadImage(topCanvas.toDataURL());
-
-            // Ambil bagian tengah (478px dari posisi 580)
-            const middleCanvas = document.createElement('canvas');
-            middleCanvas.width = partWidth;
-            middleCanvas.height = originalImage.height;
-            const middleCtx = middleCanvas.getContext('2d');
-            middleCtx.drawImage(originalImage, topWidth, 0, partWidth, originalImage.height, 0, 0, partWidth, originalImage.height);
-            const middleImage = await loadImage(middleCanvas.toDataURL());
-
-            // Ambil bagian kanan (478px dari posisi 580 + 478)
-            const rightCanvas = document.createElement('canvas');
-            rightCanvas.width = partWidth;
-            rightCanvas.height = originalImage.height;
-            const rightCtx = rightCanvas.getContext('2d');
-            rightCtx.drawImage(originalImage, topWidth + partWidth, 0, partWidth, originalImage.height, 0, 0, partWidth, originalImage.height);
-            const rightImage = await loadImage(rightCanvas.toDataURL());
-
-            // Gambar bagian atas (resize ke 1080px lebar)
-            const topHeight = 1080 * (topImage.height / topWidth);
-            ctx.drawImage(topImage, 0, 0, topWidth, topImage.height, 0, 0, 1080, topHeight);
-
-            // Gambar bagian tengah dan kanan di bawah (resize ke 540px lebar)
-            const bottomHeight = 540 * (middleImage.height / partWidth);
-            const yOffset = topHeight;
-            ctx.drawImage(middleImage, 0, 0, partWidth, middleImage.height, 0, yOffset, 540, bottomHeight);
-            ctx.drawImage(rightImage, 0, 0, partWidth, rightImage.height, 540, yOffset, 540, bottomHeight);
-        });
-
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            const canvas = document.getElementById('resultCanvas');
-            const link = document.createElement('a');
-            link.download = 'hasil-manipulasi.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        });
-
-        function loadImage(src) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = src;
-            });
-        }
-    </script>
-</body>
-
+        <script src="portrait-showcase.js"></script>
+    </body>
 </html>
