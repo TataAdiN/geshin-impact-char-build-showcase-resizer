@@ -125,7 +125,7 @@ const PortraitShowCase = {
   download() {
     const canvas = document.getElementById("resultCanvas");
     const link = document.createElement("a");
-    link.download = "hasil-manipulasi.png";
+    link.download = "show-case-result.png";
     link.href = canvas.toDataURL();
     link.click();
   },
