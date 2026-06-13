@@ -2,103 +2,162 @@ const PortraitShowCase = {
   imageSrc: null,
 
   init() {
-    document
-      .getElementById("imageInput")
-      .addEventListener("change", this.handleFile.bind(this));
-    document
-      .getElementById("processBtn")
-      .addEventListener("click", this.process.bind(this));
-    document
-      .getElementById("downloadBtn")
-      .addEventListener("click", this.download.bind(this));
+    this.imageInput = document.getElementById("imageInput");
+    this.downloadBtn = document.getElementById("downloadBtn");
+    this.dropzone = document.getElementById("dropzone");
+    this.fileInfo = document.getElementById("fileInfo");
+    this.previewPlaceholder = document.getElementById("previewPlaceholder");
+    this.resultCanvas = document.getElementById("resultCanvas");
+    this.loadingOverlay = document.getElementById("loadingOverlay");
+
+    this.imageInput.addEventListener("change", this.handleFile.bind(this));
+    this.downloadBtn.addEventListener("click", this.download.bind(this));
+
+    if (this.dropzone) {
+      this.dropzone.addEventListener("click", () => this.imageInput.click());
+
+      this.dropzone.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        this.dropzone.classList.add("dragover");
+      });
+
+      this.dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        this.dropzone.classList.add("dragover");
+      });
+
+      this.dropzone.addEventListener("dragleave", () => {
+        this.dropzone.classList.remove("dragover");
+      });
+
+      this.dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        this.dropzone.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          this.imageInput.files = files;
+          this.handleFile({ target: { files: files } });
+        }
+      });
+    }
   },
 
   handleFile(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (this.fileInfo) {
+      this.fileInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      this.fileInfo.style.display = "block";
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       this.imageSrc = event.target.result;
+      this.process();
     };
     reader.readAsDataURL(file);
   },
 
   async process() {
-    if (!this.imageSrc) return alert("Silakan upload gambar terlebih dahulu.");
-    const originalImage = await this.loadImage(this.imageSrc);
-    const resizedImage = await this.ensureWidth(originalImage, 1536);
+    if (!this.imageSrc) {
+      alert("Silakan upload gambar terlebih dahulu.");
+      return;
+    }
 
-    const canvas = document.getElementById("resultCanvas");
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (this.loadingOverlay) this.loadingOverlay.style.display = "flex";
 
-    const totalWidth = 1536;
-    const topWidth = 580;
-    const bottomWidth = totalWidth - topWidth; // 956px
-    const partWidth = bottomWidth / 2; // 478px
+    try {
+      const originalImage = await this.loadImage(this.imageSrc);
+      const resizedImage = await this.ensureWidth(originalImage, 1536);
 
-    // Split into parts
-    const topImage = await this.crop(
-      resizedImage,
-      0,
-      0,
-      topWidth,
-      resizedImage.height,
-    );
-    const middleImage = await this.crop(
-      resizedImage,
-      topWidth,
-      0,
-      partWidth,
-      resizedImage.height,
-    );
-    const rightImage = await this.crop(
-      resizedImage,
-      topWidth + partWidth,
-      0,
-      partWidth,
-      resizedImage.height,
-    );
+      const canvas = this.resultCanvas || document.getElementById("resultCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw top (scaled to 1080px wide)
-    const topHeight = 1080 * (topImage.height / topWidth);
-    ctx.drawImage(
-      topImage,
-      0,
-      0,
-      topWidth,
-      topImage.height,
-      0,
-      0,
-      1080,
-      topHeight,
-    );
+      const totalWidth = 1536;
+      const topWidth = 580;
+      const bottomWidth = totalWidth - topWidth;
+      const partWidth = bottomWidth / 2;
 
-    // Draw middle + right (scaled to 540px wide each)
-    const bottomHeight = 540 * (middleImage.height / partWidth);
-    const yOffset = topHeight;
-    ctx.drawImage(
-      middleImage,
-      0,
-      0,
-      partWidth,
-      middleImage.height,
-      0,
-      yOffset,
-      540,
-      bottomHeight,
-    );
-    ctx.drawImage(
-      rightImage,
-      0,
-      0,
-      partWidth,
-      rightImage.height,
-      540,
-      yOffset,
-      540,
-      bottomHeight,
-    );
+      const topImage = await this.crop(
+        resizedImage,
+        0,
+        0,
+        topWidth,
+        resizedImage.height,
+      );
+      const middleImage = await this.crop(
+        resizedImage,
+        topWidth,
+        0,
+        partWidth,
+        resizedImage.height,
+      );
+      const rightImage = await this.crop(
+        resizedImage,
+        topWidth + partWidth,
+        0,
+        partWidth,
+        resizedImage.height,
+      );
+
+      const topHeight = 1080 * (topImage.height / topWidth);
+      ctx.drawImage(
+        topImage,
+        0,
+        0,
+        topWidth,
+        topImage.height,
+        0,
+        0,
+        1080,
+        topHeight,
+      );
+
+      const bottomHeight = 540 * (middleImage.height / partWidth);
+      const yOffset = topHeight;
+      ctx.drawImage(
+        middleImage,
+        0,
+        0,
+        partWidth,
+        middleImage.height,
+        0,
+        yOffset,
+        540,
+        bottomHeight,
+      );
+      ctx.drawImage(
+        rightImage,
+        0,
+        0,
+        partWidth,
+        rightImage.height,
+        540,
+        yOffset,
+        540,
+        bottomHeight,
+      );
+
+      if (this.previewPlaceholder) this.previewPlaceholder.style.opacity = "0";
+      setTimeout(() => {
+        if (this.previewPlaceholder) this.previewPlaceholder.style.display = "none";
+        if (canvas) canvas.style.display = "block";
+      }, 300);
+
+      if (this.downloadBtn) {
+        this.downloadBtn.removeAttribute("disabled");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memproses gambar. Pastikan format gambar sesuai.");
+    } finally {
+      setTimeout(() => {
+        if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
+      }, 500);
+    }
   },
 
   async crop(img, sx, sy, sw, sh) {
@@ -123,10 +182,10 @@ const PortraitShowCase = {
   },
 
   download() {
-    const canvas = document.getElementById("resultCanvas");
+    const canvas = this.resultCanvas || document.getElementById("resultCanvas");
     const link = document.createElement("a");
-    link.download = "show-case-result.png";
-    link.href = canvas.toDataURL();
+    link.download = "showcase-portrait-result.png";
+    link.href = canvas.toDataURL("image/png");
     link.click();
   },
 
